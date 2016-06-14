@@ -1,3 +1,4 @@
+ifneq ($(BLUETOOTH_USR_RTK_BLUEDROID),true)
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -109,3 +110,4 @@ LOCAL_C_INCLUDES+= . \
 
 
 include $(BUILD_STATIC_LIBRARY)
+endif

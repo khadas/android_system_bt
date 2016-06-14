@@ -1,3 +1,4 @@
+ifneq ($(BLUETOOTH_USR_RTK_BLUEDROID),true)
 LOCAL_PATH:= $(call my-dir)
 
 #
@@ -174,3 +175,4 @@ LOCAL_CLANG_CFLAGS := -Wno-error=gnu-variable-sized-type-not-at-end
 LOCAL_CLANG_CFLAGS += -Wno-typedef-redefinition
 
 include $(BUILD_SHARED_LIBRARY)
+endif

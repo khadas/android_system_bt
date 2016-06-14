@@ -1,3 +1,4 @@
+ifneq ($(BLUETOOTH_USR_RTK_BLUEDROID),true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -78,3 +79,4 @@ LOCAL_SHARED_LIBRARIES := liblog libdl
 LOCAL_STATIC_LIBRARIES := libbt-hci libosi libcutils libbtcore
 
 include $(BUILD_NATIVE_TEST)
+endif
