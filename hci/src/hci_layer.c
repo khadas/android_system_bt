@@ -20,6 +20,7 @@
 
 #include <assert.h>
 #include <cutils/properties.h>
+#include <errno.h>
 #include <string.h>
 #include <signal.h>
 #include <string.h>
@@ -518,7 +519,7 @@ static void command_timed_out(UNUSED_ATTR void *context) {
 
   if (firmware_is_configured) {
     LOG_ERROR("%s restarting the bluetooth process.", __func__);
-    usleep(10000);
+    TEMP_FAILURE_RETRY(usleep(10000));
     kill(getpid(), SIGKILL);
   }
 }
