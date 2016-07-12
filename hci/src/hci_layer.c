@@ -516,9 +516,11 @@ static void command_timed_out(UNUSED_ATTR void *context) {
     LOG_ERROR("%s hci layer timeout waiting for response to a command. opcode: 0x%x", __func__, wait_entry->opcode);
   }
 
-  LOG_ERROR("%s restarting the bluetooth process.", __func__);
-  usleep(10000);
-  kill(getpid(), SIGKILL);
+  if (firmware_is_configured) {
+    LOG_ERROR("%s restarting the bluetooth process.", __func__);
+    usleep(10000);
+    kill(getpid(), SIGKILL);
+  }
 }
 
 // Event/packet receiving functions
