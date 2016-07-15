@@ -18,6 +18,10 @@ ifneq ($(TARGET_BUILD_VARIANT),user)
 bdroid_CFLAGS += -DBLUEDROID_DEBUG
 endif
 
+ifeq ($(BOARD_HAVE_BLUETOOTH_QCOM),true)
+bdroid_CFLAGS += -DCONFIG_QCA9377
+endif
+
 bdroid_CFLAGS += \
   -Wall \
   -Wno-unused-parameter \

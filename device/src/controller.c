@@ -34,7 +34,11 @@
 #include "stack/include/btm_ble_api.h"
 #include "btcore/include/version.h"
 
+#ifdef CONFIG_QCA9377
+const bt_event_mask_t BLE_EVENT_MASK = { "\x00\x00\x00\x00\x00\x00\x04\x7f" };
+#else
 const bt_event_mask_t BLE_EVENT_MASK = { "\x00\x00\x00\x00\x00\x00\x06\x7f" };
+#endif
 
 #if (BLE_INCLUDED)
 const bt_event_mask_t CLASSIC_EVENT_MASK = { HCI_DUMO_EVENT_MASK_EXT };
