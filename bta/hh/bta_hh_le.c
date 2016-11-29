@@ -1757,13 +1757,13 @@ void bta_hh_w4_le_read_char_cmpl(tBTA_HH_DEV_CB *p_dev_cb, tBTA_HH_DATA *p_buf)
 
         // Make sure both min, and max are bigger than 11.25ms, lower values can introduce
         // audio issues if A2DP is also active.
-        if (min < BTM_BLE_CONN_INT_MIN_LIMIT)
-            min = BTM_BLE_CONN_INT_MIN_LIMIT;
-        if (max < BTM_BLE_CONN_INT_MIN_LIMIT)
-            max = BTM_BLE_CONN_INT_MIN_LIMIT;
+        //if (min < BTM_BLE_CONN_INT_MIN_LIMIT)
+        //    min = BTM_BLE_CONN_INT_MIN_LIMIT;
+        //if (max < BTM_BLE_CONN_INT_MIN_LIMIT)
+        //    max = BTM_BLE_CONN_INT_MIN_LIMIT;
 
-        if (tout < BTM_BLE_CONN_TIMEOUT_MIN_DEF)
-            tout = BTM_BLE_CONN_TIMEOUT_MIN_DEF;
+        //if (tout < BTM_BLE_CONN_TIMEOUT_MIN_DEF)
+        //    tout = BTM_BLE_CONN_TIMEOUT_MIN_DEF;
 
         BTM_BleSetPrefConnParams (p_dev_cb->addr, min, max, latency, tout);
         L2CA_UpdateBleConnParams(p_dev_cb->addr, min, max, latency, tout);
