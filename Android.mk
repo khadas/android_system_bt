@@ -1,3 +1,4 @@
+ifneq ($(BLUETOOTH_USR_RTK_BLUEDROID),true)
 LOCAL_PATH := $(call my-dir)
 
 # Setup Bluetooth local make variables for handling configuration
@@ -51,3 +52,4 @@ bluetooth_C_INCLUDES :=
 bluetooth_CFLAGS :=
 bluetooth_CONLYFLAGS :=
 bluetooth_CPPFLAGS :=
+endif
