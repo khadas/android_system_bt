@@ -1030,8 +1030,10 @@ void bta_gattc_disc_cmpl(tBTA_GATTC_CLCB *p_clcb, tBTA_GATTC_DATA *p_data)
     APPL_TRACE_DEBUG("bta_gattc_disc_cmpl conn_id=%d",p_clcb->bta_conn_id);
 
 #if BLE_INCLUDED == TRUE
+#ifndef AMAZON_DONGLE
     if(p_clcb->transport == BTA_TRANSPORT_LE)
         L2CA_EnableUpdateBleConnParams(p_clcb->p_srcb->server_bda, TRUE);
+#endif
 #endif
     p_clcb->p_srcb->state = BTA_GATTC_SERV_IDLE;
     p_clcb->disc_active = FALSE;

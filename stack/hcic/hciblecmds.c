@@ -186,7 +186,10 @@ BOOLEAN btsnd_hcic_ble_set_scan_params (UINT8 scan_type,
 {
     BT_HDR *p = (BT_HDR *)osi_malloc(HCI_CMD_BUF_SIZE);
     UINT8 *pp = (UINT8 *)(p + 1);
-
+#ifdef AMAZON_DONGLE
+    scan_int = AMAZON_LE_SCAN_INT;
+    scan_win = AMAZON_LE_SCAN_WIN;
+#endif
     p->len    = HCIC_PREAMBLE_SIZE + HCIC_PARAM_SIZE_BLE_WRITE_SCAN_PARAM;
     p->offset = 0;
 
@@ -238,7 +241,14 @@ BOOLEAN btsnd_hcic_ble_create_ll_conn (UINT16 scan_int, UINT16 scan_win,
 
     UINT16_TO_STREAM (pp, HCI_BLE_CREATE_LL_CONN);
     UINT8_TO_STREAM  (pp, HCIC_PARAM_SIZE_BLE_CREATE_LL_CONN);
-
+#ifdef AMAZON_DONGLE
+    scan_int = AMAZON_LE_SCAN_INT;
+    scan_win = AMAZON_LE_SCAN_WIN;
+    min_ce_len = max_ce_len = AMAZON_LE_CON_CE_LEN;
+    //if (conn_int_min < AMAZON_LE_CON_INT_MIN) {
+        conn_int_min = conn_int_max = AMAZON_LE_CON_INT_MIN;
+    //}
+#endif
     UINT16_TO_STREAM (pp, scan_int);
     UINT16_TO_STREAM (pp, scan_win);
     UINT8_TO_STREAM (pp, init_filter_policy);
@@ -338,7 +348,12 @@ BOOLEAN btsnd_hcic_ble_upd_ll_conn_params (UINT16 handle,
 
     UINT16_TO_STREAM (pp, HCI_BLE_UPD_LL_CONN_PARAMS);
     UINT8_TO_STREAM  (pp, HCIC_PARAM_SIZE_BLE_UPD_LL_CONN_PARAMS);
-
+#ifdef AMAZON_DONGLE
+    min_ce_len = max_ce_len = AMAZON_LE_CON_CE_LEN;
+    if (conn_int_min < AMAZON_LE_CON_INT_MIN) {
+        conn_int_min = conn_int_max = AMAZON_LE_CON_INT_MIN;
+    }
+#endif
     UINT16_TO_STREAM (pp, handle);
 
     UINT16_TO_STREAM (pp, conn_int_min);

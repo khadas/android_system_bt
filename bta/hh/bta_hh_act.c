@@ -571,6 +571,11 @@ void bta_hh_open_cmpl_act(tBTA_HH_DEV_CB *p_cb, tBTA_HH_DATA *p_data)
     conn.le_hid = p_cb->is_le_device;
     conn.scps_supported = p_cb->scps_supported;
 
+#ifdef AMAZON_DONGLE
+    if (BTM_UseLeLink(p_cb->addr))
+        L2CA_EnableUpdateBleConnParams(p_cb->addr, TRUE);
+#endif
+
     if (!p_cb->is_le_device)
 #endif
     {

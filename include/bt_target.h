@@ -37,6 +37,13 @@
 /* Include common GKI definitions used by this platform */
 #include "dyn_mem.h"    /* defines static and/or dynamic memory for components */
 
+#ifdef AMAZON_DONGLE
+#define AMAZON_LE_SCAN_WIN      32
+#define AMAZON_LE_SCAN_INT      320
+#define AMAZON_LE_CON_INT_MIN   12
+#define AMAZON_LE_CON_CE_LEN    12
+#endif
+
 //------------------Added from bdroid_buildcfg.h---------------------
 #ifndef L2CAP_EXTFEA_SUPPORTED_MASK
 #define L2CAP_EXTFEA_SUPPORTED_MASK (L2CAP_EXTFEA_ENH_RETRANS | L2CAP_EXTFEA_STREAM_MODE | L2CAP_EXTFEA_NO_CRC | L2CAP_EXTFEA_FIXED_CHNLS)
@@ -695,7 +702,7 @@
  * Enables or disables support for local privacy (ex. address rotation)
  */
 #ifndef BLE_LOCAL_PRIVACY_ENABLED
-#define BLE_LOCAL_PRIVACY_ENABLED         TRUE
+#define BLE_LOCAL_PRIVACY_ENABLED         FALSE
 #endif
 
 /*

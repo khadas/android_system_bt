@@ -1078,6 +1078,9 @@ void smp_proc_id_addr(tSMP_CB *p_cb, tSMP_INT_DATA *p_data)
 *******************************************************************************/
 void smp_proc_srk_info(tSMP_CB *p_cb, tSMP_INT_DATA *p_data)
 {
+#ifdef AMAZON_DONGLE
+    unsigned int i;
+#endif
     tBTM_LE_PCSRK_KEYS   le_key;
 
     SMP_TRACE_DEBUG("%s", __func__);
@@ -1085,7 +1088,13 @@ void smp_proc_srk_info(tSMP_CB *p_cb, tSMP_INT_DATA *p_data)
 
     /* save CSRK to security record */
     le_key.sec_level = p_cb->sec_level;
+#ifdef AMAZON_DONGLE
+    for (i=0; i<sizeof(tSMP_INT_DATA); i++) {
+        le_key.csrk[i] = (UINT8)*((UINT8*)p_data+i);
+    }
+#else
     memcpy (le_key.csrk, p_data, BT_OCTET16_LEN);   /* get peer CSRK */
+#endif
     le_key.counter = 0; /* initialize the peer counter */
 
     if ((p_cb->peer_auth_req & SMP_AUTH_BOND) && (p_cb->loc_auth_req & SMP_AUTH_BOND))

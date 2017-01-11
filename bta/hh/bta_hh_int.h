@@ -201,7 +201,11 @@ typedef struct
 }tBTA_HH_LE_RPT;
 
 #ifndef BTA_HH_LE_RPT_MAX
+#ifndef AMAZON_DONGLE
 #define BTA_HH_LE_RPT_MAX       20
+#else
+#define BTA_HH_LE_RPT_MAX       31
+#endif
 #endif
 
 typedef struct

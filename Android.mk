@@ -1,6 +1,10 @@
 ifneq ($(BLUETOOTH_USR_RTK_BLUEDROID),true)
 LOCAL_PATH := $(call my-dir)
 
+ifeq ($(CYPRESS_20735),true)
+ bluetooth_CFLAGS += -DAMAZON_DONGLE
+endif
+
 # Setup Bluetooth local make variables for handling configuration
 ifneq ($(BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR),)
   bluetooth_C_INCLUDES := $(BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR)

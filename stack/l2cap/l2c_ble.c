@@ -259,13 +259,14 @@ void l2cble_use_preferred_conn_params(BD_ADDR bda) {
         p_lcb->max_interval = p_dev_rec->conn_params.max_conn_int;
         p_lcb->timeout      = p_dev_rec->conn_params.supervision_tout;
         p_lcb->latency      = p_dev_rec->conn_params.slave_latency;
-
+#ifndef AMAZON_DONGLE
         btsnd_hcic_ble_upd_ll_conn_params (p_lcb->handle,
                                            p_dev_rec->conn_params.min_conn_int,
                                            p_dev_rec->conn_params.max_conn_int,
                                            p_dev_rec->conn_params.slave_latency,
                                            p_dev_rec->conn_params.supervision_tout,
                                            0, 0);
+#endif
     }
 }
 
@@ -367,8 +368,11 @@ void l2cble_scanner_conn_comp (UINT16 handle, BD_ADDR bda, tBLE_ADDR_TYPE type,
     p_lcb->min_interval =  p_lcb->max_interval = conn_interval;
     p_lcb->timeout      =  conn_timeout;
     p_lcb->latency      =  conn_latency;
+#ifndef AMAZON_DONGLE
     p_lcb->conn_update_mask = L2C_BLE_NOT_DEFAULT_PARAM;
-
+#else
+    p_lcb->conn_update_mask = L2C_BLE_CONN_UPDATE_DISABLE;
+#endif
     /* Tell BTM Acl management about the link */
     btm_acl_created (bda, NULL, p_dev_rec->sec_bd_name, handle, p_lcb->link_role, BT_TRANSPORT_LE);
 

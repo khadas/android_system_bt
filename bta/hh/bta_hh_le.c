@@ -436,7 +436,10 @@ void bta_hh_le_open_conn(tBTA_HH_DEV_CB *p_cb, BD_ADDR remote_bda)
     memcpy(p_cb->addr, remote_bda, BD_ADDR_LEN);
     bta_hh_cb.le_cb_index[BTA_HH_GET_LE_CB_IDX(p_cb->hid_handle)] = p_cb->index;
     p_cb->in_use = TRUE;
-
+#ifdef AMAZON_DONGLE
+    APPL_TRACE_DEBUG("jilinf %s disable connection paramter update", __FUNCTION__);
+    L2CA_EnableUpdateBleConnParams(remote_bda, FALSE);
+#endif
     BTA_GATTC_Open(bta_hh_cb.gatt_if, remote_bda, TRUE, BTA_GATT_TRANSPORT_LE);
 }
 
@@ -1803,9 +1806,10 @@ void bta_hh_w4_le_read_char_cmpl(tBTA_HH_DEV_CB *p_dev_cb, tBTA_HH_DATA *p_buf)
 
         //if (tout < BTM_BLE_CONN_TIMEOUT_MIN_DEF)
         //    tout = BTM_BLE_CONN_TIMEOUT_MIN_DEF;
-
+#ifndef AMAZON_DONGLE
         BTM_BleSetPrefConnParams (p_dev_cb->addr, min, max, latency, tout);
         L2CA_UpdateBleConnParams(p_dev_cb->addr, min, max, latency, tout);
+#endif
     }
     else
     {
