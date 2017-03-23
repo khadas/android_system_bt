@@ -51,6 +51,11 @@
 #include "btif_util.h"
 #include "btu.h"
 #include "bt_common.h"
+#ifdef BCM_USB_WAKEUP
+#include<bt_target.h>
+#include <ctype.h>
+#include <errno.h>
+#endif
 #include "bta_gatt_api.h"
 #include "device/include/interop.h"
 #include "include/stack_config.h"
@@ -100,7 +105,14 @@
 
 #define ENCRYPTED_BREDR       2
 #define ENCRYPTED_LE          4
-
+#ifdef BCM_USB_WAKEUP
+typedef struct
+{
+    char rc_name[128];
+    unsigned int manu_data[32];
+    unsigned int manu_data_len;
+}RC_CONFIG;
+#endif
 typedef struct
 {
     bt_bond_state_t state;
@@ -525,10 +537,101 @@ BOOLEAN check_sdp_bl(const bt_bdaddr_t *remote_bdaddr)
     }
     return FALSE;
 }
+#ifdef BCM_USB_WAKEUP
+static BOOLEAN get_remote_name(bt_bdaddr_t *bd_addr,UINT8 *p_remote_name, UINT8 *p_remote_name_len)
+{
+    bt_bdname_t bdname;
+    bt_bdaddr_t remote_bdaddr;
+    bt_property_t prop_name;
+
+    /* check if we already have it in our btif_storage cache */
+    remote_bdaddr = *bd_addr;
+    //bdcpy(remote_bdaddr.address, bd_addr);
+    BTIF_STORAGE_FILL_PROPERTY(&prop_name, BT_PROPERTY_BDNAME,
+            sizeof(bt_bdname_t), &bdname);
+    if (btif_storage_get_remote_device_property(
+                &remote_bdaddr, &prop_name) == BT_STATUS_SUCCESS)
+    {
+        if (p_remote_name && p_remote_name_len)
+        {
+            strcpy((char *)p_remote_name, (char *)bdname.name);
+            *p_remote_name_len = strlen((char *)p_remote_name);
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static char *trim(char *str) {
+    while (isspace(*str))
+        ++str;
+
+    if (!*str)
+        return str;
+
+    char *end_str = str + strlen(str) - 1;
+    while (end_str > str && isspace(*end_str))
+        --end_str;
+
+    end_str[1] = '\0';
+    return str;
+}
+
+static void config_rc_parse(FILE *fp, RC_CONFIG *rc_config) {
+    unsigned int line_num = 0,n=0;
+    char line[1024];
+    char *p;
+
+    while (fgets(line, sizeof(line), fp)) {
+        char *line_ptr = trim(line);
+        ++line_num;
+        // Skip blank and comment lines.
+        if (*line_ptr == '\0' || *line_ptr == '#')
+            continue;
+
+        char *split = strchr(line_ptr, '=');
+        if (!split) {
+            ALOGD("%s no key/value separator found on line %d.", __func__, line_num);
+            continue;
+        }
+        *split = '\0';
+        if (!strncmp(line_ptr,"rc_name",sizeof("rc_name")))
+            strcpy(rc_config->rc_name,(split+1));
+        if (!strncmp(line_ptr,"manu_data",sizeof("manu_data")))
+        {
+            p = (split+1);
+            while (*p != 0)
+            {
+                while (*p == ' ' || *p == '\t')
+                    p++;
+
+                if (sscanf(p, "%02x", &rc_config->manu_data[n]) == 0)
+                    break;
+                n++;
+                p++;
+                while ( (*p>= '0' && *p<= '9') ||
+                        (*p>= 'a' && *p<= 'f') ||
+                        (*p>= 'A' && *p<= 'F'))
+                    p++;
+            }
+            rc_config->manu_data_len = n;
+        }
+    }
+    ALOGD("WoLE read rc_name = %s, manu_data = ",rc_config->rc_name);
+    for (n=0;n<rc_config->manu_data_len;n++)
+        ALOGD("%02X ", rc_config->manu_data[n]);
+}
+#endif
 
 static void bond_state_changed(bt_status_t status, bt_bdaddr_t *bd_addr, bt_bond_state_t state)
 {
-
+#ifdef BCM_USB_WAKEUP
+    bt_bdname_t bdname;
+    UINT8 remote_name_len;
+    UINT8 BDADDR_AND_MANU_DATA[32];
+    char wake_on_ble[128];
+    UINT32 i=0;
+#endif
     btif_stats_add_bond_event(bd_addr, BTIF_DM_FUNC_BOND_STATE_CHANGED, state);
 
     // Send bonding state only once - based on outgoing/incoming we may receive duplicates
@@ -549,7 +652,6 @@ static void bond_state_changed(bt_status_t status, bt_bdaddr_t *bd_addr, bt_bond
                       state, pairing_cb.state, pairing_cb.sdp_attempts);
 
     HAL_CBACK(bt_hal_cbacks, bond_state_changed_cb, status, bd_addr, state);
-
     if (state == BT_BOND_STATE_BONDING)
     {
         pairing_cb.state = state;
@@ -560,6 +662,92 @@ static void bond_state_changed(bt_status_t status, bt_bdaddr_t *bd_addr, bt_bond
         else
             BTIF_TRACE_DEBUG("%s: BR-EDR service discovery active", __func__);
     }
+#ifdef BCM_USB_WAKEUP
+    if ( state == BT_BOND_STATE_BONDED || state == BT_BOND_STATE_NONE)
+    {
+        ALOGE("%s state == BT_BOND_STATE_BONDED || BT_BOND_STATE_NONE", __func__);
+        //open /etc/bluetooth/rc.conf
+        FILE *fp = fopen(RC_CONF,"rt");
+        if (!fp)
+        {
+            ALOGE("%s unable to open file '%s': %s", __func__, RC_CONF, strerror(errno));
+            return;
+        }
+        RC_CONFIG *rc_config = calloc(1,sizeof(RC_CONFIG));
+
+        if (!rc_config)
+        {
+            ALOGE("%s unable to allocate memory for rc_config.", __func__);
+            fclose(fp);
+            return;
+        }
+        config_rc_parse(fp,rc_config);
+        fclose(fp);
+
+        memset(BDADDR_AND_MANU_DATA,'\0',sizeof(BDADDR_AND_MANU_DATA));
+        if ( (get_remote_name(bd_addr,bdname.name,&remote_name_len) == TRUE ) &&
+            ( strncmp(rc_config->rc_name,(char *)bdname.name,remote_name_len) == 0 )
+             )
+        {
+
+            ALOGE("Name = %s", bdname.name);
+            if ( state == BT_BOND_STATE_BONDED )
+            {
+                ALOGE("%s state == BT_BOND_STATE_BONDED", __func__);
+                //write manufacture data and bd addr into /data/misc/bluedroid/wake_on_ble.conf
+                for (i=0;i<BD_ADDR_LEN;i++)
+                    BDADDR_AND_MANU_DATA[i] = bd_addr->address[i];
+
+                BDADDR_AND_MANU_DATA[BD_ADDR_LEN] = rc_config->manu_data_len;//length
+
+                for (i=0;i<rc_config->manu_data_len;i++)
+                    BDADDR_AND_MANU_DATA[BD_ADDR_LEN+i+1] = rc_config->manu_data[i];
+
+                FILE *fp_wole = fopen(WAKE_ON_BLE_CONF,"w+");
+                if (!fp_wole)
+                {
+                    ALOGE("%s unable to open file '%s': %s", __func__, WAKE_ON_BLE_CONF, strerror(errno));
+                    return;
+                }
+                char *p = wake_on_ble;
+                memset(wake_on_ble,'\0',sizeof(wake_on_ble));
+                for (i=0;i<rc_config->manu_data_len+6+1; i++)
+                {
+                    sprintf(p,"%02x ",BDADDR_AND_MANU_DATA[i]);
+                    p += strlen(p);
+                }
+
+                fprintf(fp_wole,"%s",wake_on_ble);
+                fclose(fp_wole);
+                free(rc_config);
+            }
+            else if ( state == BT_BOND_STATE_NONE )
+            {
+                ALOGE("%s state == BT_BOND_STATE_NONE", __func__);
+                FILE *fp_wole = fopen(WAKE_ON_BLE_CONF,"rt");
+                if (!fp_wole)
+                {
+                    ALOGE("%s unable to open file '%s': %s", __func__, WAKE_ON_BLE_CONF, strerror(errno));
+                    return;
+                }
+                memset(wake_on_ble,'\0',sizeof(wake_on_ble));
+                fgets(wake_on_ble, sizeof(wake_on_ble), fp);
+                sscanf(wake_on_ble,"%02x %02x %02x %02x %02x %02x",(unsigned int *)&BDADDR_AND_MANU_DATA[0],
+                    (unsigned int *)&BDADDR_AND_MANU_DATA[1],(unsigned int *)&BDADDR_AND_MANU_DATA[2],(unsigned int *)&BDADDR_AND_MANU_DATA[3],
+                    (unsigned int *)&BDADDR_AND_MANU_DATA[4],(unsigned int *)&BDADDR_AND_MANU_DATA[5]);
+
+                for (i=0;i<BD_ADDR_LEN;i++)
+                    if (BDADDR_AND_MANU_DATA[i] != bd_addr->address[i])
+                        break;
+                if (i == BD_ADDR_LEN )
+                {
+                    ALOGE("%s BD ADDR match, remove wake_on_ble.conf", __func__);
+                    remove(WAKE_ON_BLE_CONF);
+                }
+            }
+        }
+    }
+#endif
 }
 
 /* store remote version in bt config to always have access

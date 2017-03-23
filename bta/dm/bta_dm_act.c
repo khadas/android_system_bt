@@ -44,11 +44,14 @@
 #include "osi/include/osi.h"
 #include "sdp_api.h"
 #include "utl.h"
-
+#ifdef BCM_USB_WAKEUP
+#include "btm_ble_api.h"
+#include <stdio.h>
+#include <errno.h>
+#endif
 #if (GAP_INCLUDED == TRUE)
 #include "gap_api.h"
 #endif
-
 static void bta_dm_inq_results_cb (tBTM_INQ_RESULTS *p_inq, UINT8 *p_eir);
 static void bta_dm_inq_cmpl_cb (void * p_result);
 static void bta_dm_service_search_remname_cback (BD_ADDR bd_addr, DEV_CLASS dc, BD_NAME bd_name);
@@ -466,7 +469,15 @@ static void bta_dm_sys_hw_cback( tBTA_SYS_HW_EVT status )
 void bta_dm_disable (tBTA_DM_MSG *p_data)
 {
     UNUSED(p_data);
-
+#ifdef BCM_USB_WAKEUP
+    BD_ADDR bda;
+    BD_ADDR bda_empty;
+    memset(&bda,0,sizeof(BD_ADDR));
+    memset(&bda_empty,0,sizeof(BD_ADDR));
+    char wake_on_ble[128];
+    UINT8 BDADDR_AND_MANU[32];
+    int n=0,i=0;
+#endif
     /* Set l2cap idle timeout to 0 (so BTE immediately disconnects ACL link after last channel is closed) */
     L2CA_SetIdleTimeoutByBdAddr((UINT8 *)BT_BD_ANY, 0, BT_TRANSPORT_BR_EDR);
     L2CA_SetIdleTimeoutByBdAddr((UINT8 *)BT_BD_ANY, 0, BT_TRANSPORT_LE);
@@ -506,6 +517,40 @@ void bta_dm_disable (tBTA_DM_MSG *p_data)
                            bta_dm_disable_timer_cback, UINT_TO_PTR(0),
                            btu_bta_alarm_queue);
     }
+#ifdef BCM_USB_WAKEUP
+    //Issue PCF command to support WoLE and also start LE scan
+    FILE *fp_wole = fopen(WAKE_ON_BLE_CONF,"rt");
+    if (!fp_wole)
+    {
+        APPL_TRACE_ERROR("%s unable to open file '%s': %s", __func__, WAKE_ON_BLE_CONF, strerror(errno));
+        return;
+    }
+    fgets(wake_on_ble, sizeof(wake_on_ble), fp_wole);
+    memset(BDADDR_AND_MANU,'\0',sizeof(BDADDR_AND_MANU));
+    char *p= wake_on_ble;
+
+    while (*p != 0)
+    {
+        while (*p == ' ' || *p == '\t')
+            p++;
+
+        if (sscanf(p, "%02x", (unsigned int *)&BDADDR_AND_MANU[n]) == 0)
+            break;
+        n++;
+        p++;
+        while ( (*p>= '0' && *p<= '9') ||
+                (*p>= 'a' && *p<= 'f') ||
+                (*p>= 'A' && *p<= 'F'))
+            p++;
+    }
+
+    int manu_data_len = (int)BDADDR_AND_MANU[6];
+    for (i=0;i<BD_ADDR_LEN;i++)
+        bda[i] = BDADDR_AND_MANU[i];
+
+    BTM_BleWoLEParamSetup(0,bda, &BDADDR_AND_MANU[6],manu_data_len+1);
+    APPL_TRACE_DEBUG("%s Luke:Set BleWoLe enable",__FUNCTION__);
+#endif
 }
 
 /*******************************************************************************

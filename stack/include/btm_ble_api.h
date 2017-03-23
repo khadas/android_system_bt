@@ -276,7 +276,9 @@ typedef struct
 ** BTM function is complete. The pointer contains the address of any returned data.
 */
 typedef void (tBTM_RAND_ENC_CB) (tBTM_RAND_ENC *p1);
-
+#ifdef BCM_USB_WAKEUP
+tBTM_STATUS BTM_BleWoLEParamSetup(int action,BD_ADDR p_target, UINT8* MANU_DATA,int manu_data_len);
+#endif
 #define BTM_BLE_FILTER_TARGET_SCANNER       0x01
 #define BTM_BLE_FILTER_TARGET_ADVR          0x00
 

@@ -22,6 +22,10 @@ ifneq ($(TARGET_BUILD_VARIANT),user)
 bluetooth_CFLAGS += -DBLUEDROID_DEBUG
 endif
 
+ifeq ($(BCM_USB_WAKEUP),true)
+bluetooth_CFLAGS += -DBCM_USB_WAKEUP
+endif
+
 bluetooth_CFLAGS += -DEXPORT_SYMBOL="__attribute__((visibility(\"default\")))"
 
 #

@@ -1030,6 +1030,69 @@ tBTM_STATUS btm_ble_clear_scan_pf_filter(tBTM_BLE_SCAN_COND_OP action,
     return st;
 }
 
+#ifdef BCM_USB_WAKEUP
+tBTM_STATUS BTM_BleWoLEParamSetup(int action,BD_ADDR p_target, UINT8* MANU_DATA,int manu_data_len)
+{
+#define BTM_BLE_WOLE_PARAM_SIZE 128
+    int i,len=0;
+
+    tBTM_STATUS     st = BTM_WRONG_MODE;
+    UINT8       param[BTM_BLE_WOLE_PARAM_SIZE],*p;
+    p= param;
+/*
+    [4C FC 24]: 00 20 00 ff 22 22 00 20 73 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 07 02 01 05 05 02 0f 18
+*/
+    memset(param, 0, BTM_BLE_WOLE_PARAM_SIZE);
+    UINT32_TO_STREAM(p, 0xff002000);
+    len+=4;
+    BDADDR_TO_STREAM(p, p_target); // Target address
+    len+=6;
+    //only support 1 now.
+    p+=18;
+    len+=18;
+
+    for (i=0;i<manu_data_len;i++) //filter data
+    {
+        *p = *(MANU_DATA+i);
+        p++;
+    }
+    len+= manu_data_len;
+
+
+    if ((st = BTM_VendorSpecificCommand (HCI_BLE_WRITE_RAM,
+                    (UINT8)len,
+                    param,
+                    NULL))
+            == BTM_NO_RESOURCES)
+    {
+        return st;
+    }
+
+/*
+[4c fc 08] 01 20 00 ff 01 00 00 00 //enable wole
+*/
+    st = BTM_WRONG_MODE;
+
+    p= param;
+    len=0;
+    memset(param, 0, BTM_BLE_WOLE_PARAM_SIZE);
+    UINT32_TO_STREAM(p, 0xff002001);
+    len+=4;
+    UINT32_TO_STREAM(p, 0x00000001);
+    len+=4;
+
+    if ((st = BTM_VendorSpecificCommand (HCI_BLE_WRITE_RAM,
+                    (UINT8)len,
+                    param,
+                    NULL))
+            == BTM_NO_RESOURCES)
+    {
+        return st;
+    }
+
+    return st;
+}
+#endif
 /*******************************************************************************
 **
 ** Function         BTM_BleAdvFilterParamSetup

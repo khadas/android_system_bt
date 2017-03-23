@@ -372,7 +372,9 @@
 
 /* Controller debug info OCF */
 #define HCI_CONTROLLER_DEBUG_INFO_OCF     (0x015B | HCI_GRP_VENDOR_SPECIFIC)
-
+#ifdef BCM_USB_WAKEUP
+#define HCI_BLE_WRITE_RAM        (0x004C | HCI_GRP_VENDOR_SPECIFIC)
+#endif
 /* subcode for multi adv feature */
 #define BTM_BLE_MULTI_ADV_SET_PARAM                     0x01
 #define BTM_BLE_MULTI_ADV_WRITE_ADV_DATA                0x02

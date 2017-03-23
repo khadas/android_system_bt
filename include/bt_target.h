@@ -23,7 +23,10 @@
 #ifndef BUILDCFG
 #define BUILDCFG
 #endif
-
+#ifdef BCM_USB_WAKEUP
+#define RC_CONF "/etc/bluetooth/rc.conf"
+#define WAKE_ON_BLE_CONF "/data/misc/bluedroid/wake_on_ble.conf"
+#endif
 #if !defined(HAS_BDROID_BUILDCFG) && !defined(HAS_NO_BDROID_BUILDCFG)
 #error "An Android.mk file did not include bdroid_CFLAGS and possibly not bdorid_C_INCLUDES"
 #endif
@@ -98,7 +101,11 @@
 #endif
 
 #ifndef BTA_DISABLE_DELAY
+#ifdef BCM_USB_WAKEUP
+#define BTA_DISABLE_DELAY 1500 /* in milliseconds */
+#else
 #define BTA_DISABLE_DELAY 200 /* in milliseconds */
+#endif
 #endif
 
 #ifndef SBC_FOR_EMBEDDED_LINUX
