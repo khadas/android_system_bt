@@ -56,6 +56,8 @@ bt_bdaddr_t btif_local_bd_addr;
 #define RETRIEVE_ACL_LENGTH(preamble) ((((preamble)[3]) << 8) | (preamble)[2])
 
 #define BT_HCI_TIMEOUT_TAG_NUM 1010000
+#define INIT_TIMEOUT_RETRY_MAX 2
+
 
 static const uint8_t preamble_sizes[] = {
   HCI_COMMAND_PREAMBLE_SIZE,
@@ -537,6 +539,21 @@ static void command_timed_out(UNUSED_ATTR void *context) {
     // If it's caused by a software bug, fix it. If it's a hardware bug, fix it.
     LOG_ERROR(LOG_TAG, "%s hci layer timeout waiting for response to a command. opcode: 0x%x", __func__, wait_entry->opcode);
     LOG_EVENT_INT(BT_HCI_TIMEOUT_TAG_NUM, wait_entry->opcode);
+    // If the timeout command is the 1st RESET, won't restart bluetooth
+    //process after some retries.
+    if (wait_entry->opcode == HCI_RESET) {
+      char value[PROPERTY_VALUE_MAX] = {0};
+
+      osi_property_get("bluetooth.init_timeout_retries", value, "0");
+      int retries = atoi(value);
+
+      if (retries >= INIT_TIMEOUT_RETRY_MAX)
+        return;
+
+      sprintf(value, "%d", retries + 1);
+      osi_property_set("bluetooth.init_timeout_retries", value);
+      LOG_ERROR(LOG_TAG, "HCI_RESET time out, retry %d.", retries);
+    }
   }
 
   LOG_ERROR(LOG_TAG, "%s restarting the bluetooth process.", __func__);
