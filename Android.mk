@@ -1,6 +1,6 @@
 ifneq ($(BLUETOOTH_USR_RTK_BLUEDROID),true)
 LOCAL_PATH := $(call my-dir)
-
+CYPRESS_20735 := true
 ifeq ($(CYPRESS_20735),true)
  bluetooth_CFLAGS += -DAMAZON_DONGLE
 endif
