@@ -194,7 +194,7 @@ typedef uint8_t tBTM_BLE_SFP;
 
 /* minimum acceptable connection interval */
 #ifndef BTM_BLE_CONN_INT_MIN_LIMIT
-#define BTM_BLE_CONN_INT_MIN_LIMIT 0x0009
+#define BTM_BLE_CONN_INT_MIN_LIMIT 0x0006
 #endif
 
 #define BTM_BLE_DIR_CONN_FALLBACK_UNDIR 1

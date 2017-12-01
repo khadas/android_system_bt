@@ -676,7 +676,7 @@
  * feature discovery, multi-adv etc.
  */
 #ifndef BLE_VND_INCLUDED
-#define BLE_VND_INCLUDED FALSE
+#define BLE_VND_INCLUDED TRUE
 #endif
 
 #ifndef BTM_BLE_ADV_TX_POWER
