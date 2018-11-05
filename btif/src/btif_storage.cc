@@ -211,6 +211,7 @@ static int prop2cfg(const RawAddress* remote_bd_addr, bt_property_t* prop) {
         btif_config_set_str(bdstr, BTIF_STORAGE_PATH_REMOTE_NAME, value);
       else
         btif_config_set_str("Adapter", BTIF_STORAGE_KEY_ADAPTER_NAME, value);
+      btif_config_flush();
       break;
     }
     case BT_PROPERTY_REMOTE_FRIENDLY_NAME:
