@@ -42,7 +42,9 @@
 #include <hardware/audio.h>
 #include <hardware/hardware.h>
 #include <system/audio.h>
-
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+#include <cutils/str_parms.h>
+#endif
 #include "osi/include/hash_map_utils.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
@@ -62,7 +64,9 @@
 #define SEC_TO_NS 1000000000
 #define MS_TO_NS 1000000
 #define DELAY_TO_NS 100000
-
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+#define VAL_LEN 64
+#endif
 #define MIN_DELAY_MS 100
 #define MAX_DELAY_MS 1000
 
@@ -107,6 +111,7 @@ struct a2dp_audio_device {
   std::recursive_mutex* mutex;  // See note below on mutex acquisition order.
   struct a2dp_stream_in* input;
   struct a2dp_stream_out* output;
+
 };
 
 struct a2dp_config {
@@ -132,6 +137,13 @@ struct a2dp_stream_out {
   struct a2dp_stream_common common;
   uint64_t frames_presented;  // frames written, never reset
   uint64_t frames_rendered;   // frames written, reset on standby
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  float bt_gain;
+  float right_gain;
+  float left_gain;
+  int bt_unmute;
+#endif
+
 };
 
 struct a2dp_stream_in {
@@ -921,7 +933,12 @@ static ssize_t out_write(struct audio_stream_out* stream, const void* buffer,
   struct a2dp_stream_out* out = (struct a2dp_stream_out*)stream;
   int sent = -1;
   size_t write_bytes = bytes;
-
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  int16_t *outbuff;
+  int32_t *outbuff1;
+  float tmp = 0;
+  int chan_num = audio_channel_count_from_out_mask(out->common.cfg.channel_mask);
+#endif
   DEBUG("write %zu bytes (fd %d)", bytes, out->common.audio_fd);
 
   std::unique_lock<std::recursive_mutex> lock(*out->common.mutex);
@@ -956,6 +973,49 @@ static ssize_t out_write(struct audio_stream_out* stream, const void* buffer,
   }
 
   lock.unlock();
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  if (out->common.cfg.format == AUDIO_FORMAT_PCM_16_BIT) {
+    outbuff = (int16_t *)buffer;
+    outbuff1 = NULL;
+    if (chan_num == 2) {
+      for (unsigned int i = 0; i < write_bytes/2; i++) {
+        if (i % 2 == 0) {
+          tmp = (float)(outbuff[i] * out->bt_gain * out->bt_unmute * out->left_gain);
+          outbuff[i] = (int16_t)tmp;
+        } else {
+          tmp = (float)(outbuff[i] * out->bt_gain * out->bt_unmute * out->right_gain);
+          outbuff[i] = (int16_t)tmp;
+        }
+      }
+    } else {
+      for (unsigned int i = 0; i < write_bytes/2; i++) {
+        tmp = (float)(outbuff[i] * out->bt_gain * out->bt_unmute);
+        outbuff[i] = (int16_t)tmp;
+      }
+    }
+  }
+
+  if (out->common.cfg.format == AUDIO_FORMAT_PCM_32_BIT) {
+    outbuff1 = (int32_t *)buffer;
+    outbuff = NULL;
+    if (chan_num == 2) {
+      for (unsigned int i = 0; i < write_bytes/4; i++) {
+        if (i % 2 == 0) {
+          tmp = (float)(outbuff1[i] * out->bt_gain * out->bt_unmute * out->left_gain);
+          outbuff1[i] = (int32_t)tmp;
+        } else {
+          tmp = (float)(outbuff1[i] * out->bt_gain * out->bt_unmute * out->right_gain);
+          outbuff[i] = (int32_t)tmp;
+        }
+      }
+    } else {
+      for (unsigned int i = 0; i < write_bytes/4; i++) {
+        tmp = (float)(outbuff1[i] * out->bt_gain * out->bt_unmute);
+        outbuff1[i] = (int32_t)tmp;
+      }
+    }
+  }
+#endif
   sent = skt_write(out->common.audio_fd, buffer, write_bytes);
   lock.lock();
 
@@ -1659,7 +1719,12 @@ static int adev_open_output_stream(struct audio_hw_device* dev,
   }
   *stream_out = &out->stream;
   a2dp_dev->output = out;
-
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  a2dp_dev->output->bt_gain = 1;
+  a2dp_dev->output->bt_unmute = 1;
+  a2dp_dev->output->left_gain = 1;
+  a2dp_dev->output->right_gain = 1;
+#endif
   DEBUG("success");
   /* Delay to ensure Headset is in proper state when START is initiated from
    * DUT immediately after the connection due to ongoing music playback. */
@@ -1706,18 +1771,54 @@ static int adev_set_parameters(struct audio_hw_device* dev,
                                const char* kvpairs) {
   struct a2dp_audio_device* a2dp_dev = (struct a2dp_audio_device*)dev;
   int retval = 0;
-
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  struct str_parms *parms;
+  int ret = 0;
+  char value[VAL_LEN];
+  ALOGI("%s(kv: %s)", __FUNCTION__, kvpairs);
+  parms = str_parms_create_str(kvpairs);
+#endif
   // prevent interference with adev_close_output_stream
   std::lock_guard<std::recursive_mutex> lock(*a2dp_dev->mutex);
   struct a2dp_stream_out* out = a2dp_dev->output;
-
   if (out == NULL) return retval;
-
   INFO("state %d", out->common.state);
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  ret = str_parms_get_str(parms, "BT_GAIN", value, sizeof(value));
+  if (ret >= 0) {
+      sscanf(value, "%f", &out->bt_gain);
+      ALOGI("%s() audio bt gain: %f", __func__,out->bt_gain);
+      goto exit;
+    }
 
+  ret = str_parms_get_str(parms, "BT_MUTE", value, sizeof(value));
+  if (ret >= 0) {
+    sscanf(value, "%d", &out->bt_unmute);
+    ALOGI("%s() audio bt unmute: %d", __func__,out->bt_unmute);
+    goto exit;
+  }
+
+  ret = str_parms_get_str(parms, "BT_GAIN_RIGHT", value, sizeof(value));
+  if (ret >= 0) {
+    sscanf(value, "%f %f", &out->right_gain,&out->left_gain);
+    ALOGI("%s() audio bt right gain: %f left gain is %f", __func__,out->right_gain, out->left_gain);
+    goto exit;
+  }
+
+  ret = str_parms_get_str(parms, "BT_GAIN_LEFT", value, sizeof(value));
+  if (ret >= 0) {
+    sscanf(value, "%f %f", &out->left_gain,&out->right_gain);
+    ALOGI("%s() audio bt left gain: %f right gain is %f", __func__,out->left_gain, out->right_gain);
+    goto exit;
+  }
+
+exit:
+#endif
   retval =
       out->stream.common.set_parameters((struct audio_stream*)out, kvpairs);
-
+#if defined(AUDIO_EFFECT_EXTERN_DEVICE)
+  str_parms_destroy (parms);
+#endif
   return retval;
 }
 
