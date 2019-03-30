@@ -1212,6 +1212,11 @@
 #define AVCT_NUM_CONN 14  // 2 * MaxDevices + 2
 #endif
 
+/* add avctp control function */
+#ifndef ADD_AVCTP_CONTROL
+#define ADD_AVCTP_CONTROL  FALSE
+#endif
+
 /******************************************************************************
  *
  * AVRCP
