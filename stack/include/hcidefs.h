@@ -1240,6 +1240,12 @@ typedef struct {
 #define HCI_BRCM_ACL_PRIORITY_HIGH 0xFF
 #define HCI_BRCM_SET_ACL_PRIORITY (0x0057 | HCI_GRP_VENDOR_SPECIFIC)
 
+/* Set ACL Priority Extended (with direction param) */
+#define HCI_BRCM_A2DP_SOURCE 0x00
+#define HCI_BRCM_A2DP_SINK 0x01
+#define HCI_BRCM_ACL_PRIORITY_EXT_PARAM_SIZE 4
+#define HCI_BRCM_SET_ACL_PRIORITY_EXT (0x011A | HCI_GRP_VENDOR_SPECIFIC)
+
 /* Define values for LMP Test Control parameters
  * Test Scenario, Hopping Mode, Power Control Mode
 */
