@@ -99,6 +99,7 @@ const Uuid UUID_HEARING_AID = Uuid::FromString("FDF0");
 #define NUM_TIMEOUT_RETRIES 5
 
 #define PROPERTY_PRODUCT_MODEL "ro.product.model"
+#define PROPERTY_BLUETOOTH_NAME "persist.sys.blue.name"
 #define DEFAULT_LOCAL_NAME_MAX 31
 #if (DEFAULT_LOCAL_NAME_MAX > BTM_MAX_LOC_BD_NAME_LEN)
 #error "default btif local name size exceeds stack supported length"
@@ -1562,22 +1563,17 @@ static void btif_dm_upstreams_evt(uint16_t event, char* p_param) {
   switch (event) {
     case BTA_DM_ENABLE_EVT: {
       BD_NAME bdname;
-      bt_status_t status;
+      char prop_model[PROPERTY_VALUE_MAX];
+      char model[PROPERTY_VALUE_MAX];
       bt_property_t prop;
       prop.type = BT_PROPERTY_BDNAME;
       prop.len = BD_NAME_LEN;
       prop.val = (void*)bdname;
 
-      status = btif_storage_get_adapter_property(&prop);
-      if (status == BT_STATUS_SUCCESS) {
-        /* A name exists in the storage. Make this the device name */
-        BTA_DmSetDeviceName((char*)prop.val);
-      } else {
-        /* Storage does not have a name yet.
-         * Use the default name and write it to the chip
-         */
-        BTA_DmSetDeviceName(btif_get_default_local_name());
-      }
+      btif_storage_get_adapter_property(&prop);
+      osi_property_get(PROPERTY_PRODUCT_MODEL, model, "");
+      osi_property_get(PROPERTY_BLUETOOTH_NAME, prop_model, model);
+      BTA_DmSetDeviceName(prop_model);
 
       /* Enable local privacy */
       BTA_DmBleConfigLocalPrivacy(BLE_LOCAL_PRIVACY_ENABLED);
@@ -3187,7 +3183,9 @@ static char* btif_get_default_local_name() {
       strncpy(btif_default_local_name, BTM_DEF_LOCAL_NAME, max_len);
     } else {
       char prop_model[PROPERTY_VALUE_MAX];
-      osi_property_get(PROPERTY_PRODUCT_MODEL, prop_model, "");
+      char model[PROPERTY_VALUE_MAX];
+      osi_property_get(PROPERTY_PRODUCT_MODEL, model, "");
+      osi_property_get(PROPERTY_BLUETOOTH_NAME, prop_model, model);
       strncpy(btif_default_local_name, prop_model, max_len);
     }
     btif_default_local_name[max_len] = '\0';
