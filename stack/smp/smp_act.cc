@@ -19,6 +19,7 @@
 #include <cutils/log.h>
 #include <log/log.h>
 #include <string.h>
+#include "btif_api.h"
 #include "btif_common.h"
 #include "btif_storage.h"
 #include "device/include/interop.h"
@@ -1620,6 +1621,7 @@ void smp_process_peer_nonce(tSMP_CB* p_cb, tSMP_INT_DATA* p_data) {
   // PTS Testing failure modes (for LT)
   if ((p_cb->cert_failure == SMP_NUMERIC_COMPAR_FAIL) &&
       (p_cb->selected_association_model == SMP_MODEL_SEC_CONN_JUSTWORKS) &&
+      (!is_atv_device()) &&
       (p_cb->role == HCI_ROLE_SLAVE)) {
     SMP_TRACE_ERROR("%s failure case = %d", __func__, p_cb->cert_failure);
     tSMP_INT_DATA smp_int_data;
