@@ -30,6 +30,11 @@ class PeerPacketTypes {
   } acl, sco;
 
   PeerPacketTypes(const BD_FEATURES& features) {
+    // @Rockchip fix
+    /* default 1 slot packet should be supported */
+    acl.supported = (HCI_PKT_TYPES_MASK_DM1 | HCI_PKT_TYPES_MASK_DH1);
+    // @end
+
     /* 3 and 5 slot packets? */
     if (HCI_3_SLOT_PACKETS_SUPPORTED(features))
       acl.supported |= (HCI_PKT_TYPES_MASK_DH3 | HCI_PKT_TYPES_MASK_DM3);
