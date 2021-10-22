@@ -18,6 +18,11 @@ cc_library {
         "src/audio_a2dp_hw.cc",
         "src/audio_a2dp_hw_utils.cc",
     ],
+
+    cflags: [
+        "-Wno-format",
+    ],
+
     shared_libs: [
         "liblog",
         "libcutils",
