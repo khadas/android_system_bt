@@ -469,12 +469,14 @@ void bta_ag_rfc_open(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& data) {
     if (btif_config_get_bin(
             p_scb->peer_addr.ToString(), HFP_SDP_FEATURES_CONFIG_KEY,
             (uint8_t*)&p_scb->peer_sdp_features, &sdp_features_size)) {
+      #if (DISABLE_WBS == FALSE)
       bool sdp_wbs_support = p_scb->peer_sdp_features & BTA_AG_FEAT_WBS_SUPPORT;
       if (!p_scb->received_at_bac && sdp_wbs_support) {
         p_scb->codec_updated = true;
         p_scb->peer_codecs = BTA_AG_CODEC_CVSD & BTA_AG_CODEC_MSBC;
         p_scb->sco_codec = UUID_CODEC_MSBC;
       }
+      #endif
     } else {
       APPL_TRACE_WARNING("%s: Failed read cached peer HFP SDP features for %s",
                          __func__, p_scb->peer_addr.ToString().c_str());

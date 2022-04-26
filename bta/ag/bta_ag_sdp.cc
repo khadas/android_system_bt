@@ -365,6 +365,7 @@ bool bta_ag_sdp_find_attr(tBTA_AG_SCB* p_scb, tBTA_SERVICE_MASK service) {
         /* There might be race condition between SDP and BRSF.  */
         /* Do not update if we already received BRSF.           */
         uint16_t sdp_features = p_attr->attr_value.v.u16;
+        #if (DISABLE_WBS == FALSE)
         bool sdp_wbs_support = sdp_features & BTA_AG_FEAT_WBS_SUPPORT;
         if (!p_scb->received_at_bac && sdp_wbs_support) {
           // Workaround for misbehaving HFs (e.g. some Hyundai car kit) that:
@@ -375,6 +376,7 @@ bool bta_ag_sdp_find_attr(tBTA_AG_SCB* p_scb, tBTA_SERVICE_MASK service) {
           p_scb->peer_codecs = BTA_AG_CODEC_CVSD & BTA_AG_CODEC_MSBC;
           p_scb->sco_codec = UUID_CODEC_MSBC;
         }
+        #endif
         if (sdp_features != p_scb->peer_sdp_features) {
           p_scb->peer_sdp_features = sdp_features;
           if (btif_config_set_bin(
