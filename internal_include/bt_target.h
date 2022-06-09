@@ -253,7 +253,7 @@
 #endif
 
 #ifndef DISABLE_WBS
-#define DISABLE_WBS FALSE
+#define DISABLE_WBS TRUE
 #endif
 
 /*  This is used to work around a controller bug that doesn't like Disconnect

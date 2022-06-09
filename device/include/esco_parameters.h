@@ -59,7 +59,7 @@ typedef uint8_t esco_coding_format_t;
 typedef uint8_t esco_pcm_data_format_t;
 
 // SCO Data Path
-#define ESCO_DATA_PATH_PCM 1                /* 0x01-0xFE (PCM Chan) */
+#define ESCO_DATA_PATH_PCM 6                /* 0x01-0xFE (PCM Chan) */
 #define ESCO_DATA_PATH_HCI ((uint8_t)0x00)  /* HCI-0, 0x01-0xFE (PCM Chan) */
 #define ESCO_DATA_PATH_TEST ((uint8_t)0xFF) /* 0xFF-Audio Test */
 typedef uint8_t esco_data_path_t;
