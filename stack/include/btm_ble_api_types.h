@@ -168,13 +168,13 @@ typedef uint8_t tBTM_BLE_SFP;
 /* default connection interval min */
 #ifndef BTM_BLE_CONN_INT_MIN_DEF
 /* recommended min: 30ms  = 24 * 1.25 */
-#define BTM_BLE_CONN_INT_MIN_DEF 6
+#define BTM_BLE_CONN_INT_MIN_DEF 24
 #endif
 
 /* default connectino interval max */
 #ifndef BTM_BLE_CONN_INT_MAX_DEF
 /* recommended max: 50 ms = 56 * 1.25 */
-#define BTM_BLE_CONN_INT_MAX_DEF 6
+#define BTM_BLE_CONN_INT_MAX_DEF 40
 #endif
 
 /* default slave latency */
